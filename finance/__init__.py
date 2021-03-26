@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 import os
 import requests
 import requests_unixsocket
@@ -12,8 +13,18 @@ def app_exists():
     check50.exists("app.js")
 
 @check50.check(app_exists)
+def env():
+    """load environment variables"""
+    check50.exists(".env")
+    load_dotenv(dotenv_path='.env')
+    if not os.getenv("DB_CON_STRING"):
+        raise check50.Failure('The file .env does not specify DB_CON_STRING')
+    if not os.getenv("API_KEY"):
+        raise check50.Failure('The file .env does not specify API_KEY')
+
+@check50.check(env)
 def npm_install():
-    """node modules installed"""
+    """install node modules"""
     check50.exists("package.json")
     check50.exists("package-lock.json")
     check50.run("npm install").exit(code=0, timeout=20)
@@ -21,7 +32,7 @@ def npm_install():
 
 @check50.check(npm_install)
 def route():
-    """Route / works"""
+    """route / returns 200"""
     with App() as app:
         r = app.get('/')
         if r.status_code != 200:
@@ -33,6 +44,10 @@ class App(object):
         self.session = requests_unixsocket.Session()
 
     def __enter__(self):
+        # check50 starts each different checks in different processes.
+        # We need to reload the environment variables in each check.
+        load_dotenv(dotenv_path='.env')
+
         cmd = ['node', 'app.js']
         # Bind the app to a UNIX domain socket to run checks in parallel.
         env = { **os.environ, 'PORT': 'app.sock' }
@@ -55,7 +70,7 @@ class App(object):
         try:
             return self.session.get(f'http+unix://app.sock{route}')
         except requests.exceptions.ConnectionError:
-            raise check50.Failure('There is no server running')
+            raise check50.Failure('Server is not running')
 
     def __exit__(self, type, value, traceback):
         self.proc.kill()

@@ -4,8 +4,10 @@ check50:
                 - !include "package.json"
                 - !include "package-lock.json"
                 - !include "*.js"
+                - !include ".env"
                 - !exclude "node_modules/"
         dependencies:
+                - python-dotenv
                 - requests
                 - requests_unixsocket
 
