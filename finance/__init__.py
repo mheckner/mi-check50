@@ -33,7 +33,7 @@ class App(object):
 
     def __enter__(self):
         cmd = ['node', 'app.js']
-        env = {'PORT': 'app.sock'}
+        env = {**os.environ, 'PORT': 'app.sock'}
         self.proc = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE)
 
         ## Wait for server to start
