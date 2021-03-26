@@ -2,6 +2,7 @@ import os
 import requests
 import requests_unixsocket
 import subprocess
+import time
 
 import check50
 
@@ -33,12 +34,20 @@ class App(object):
 
     def __enter__(self):
         cmd = ['node', 'app.js']
-        env = {**os.environ, 'PORT': 'app.sock'}
-        self.proc = subprocess.Popen(cmd, env=env, stdout=subprocess.PIPE)
+        # Bind the app to a UNIX domain socket to run checks in parallel.
+        env = { **os.environ, 'PORT': 'app.sock' }
+        self.proc = subprocess.Popen(cmd, env=env)
 
-        ## Wait for server to start
-        ## XXX: dirty hack
-        line = self.proc.stdout.readline()
+        # Wait up to 10 seconds for the server to startup.
+        for i in range(0,10):
+            if self.proc.poll():
+                raise check50.Failure(
+                        f'Server crashed with code {self.proc.returncode}')
+            if os.path.exists('app.sock'):
+                break
+            time.sleep(1)
+        else:
+            raise check50.Failure('Server not started within 10 seconds')
 
         return self
 
