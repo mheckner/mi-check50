@@ -1,0 +1,12 @@
+check50:
+        files: &student_files
+                - !exclude "*"
+                - !include "package.json"
+                - !include "package-lock.json"
+                - !include "*.js"
+                - !exclude "node_modules/"
+        dependencies:
+                - requests
+
+submit50:
+        files: *student_files
