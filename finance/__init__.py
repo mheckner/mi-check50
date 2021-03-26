@@ -12,10 +12,10 @@ def app_exists():
 
 @check50.check(app_exists)
 def npm_install():
-    """install node modules"""
+    """node modules installed"""
     check50.exists("package.json")
     check50.exists("package-lock.json")
-    check50.run("npm install").exit(code=0, timeout=10)
+    check50.run("npm install").exit(code=0, timeout=20)
     check50.exists("node_modules")
 
 @check50.check(npm_install)
