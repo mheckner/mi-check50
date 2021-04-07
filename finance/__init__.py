@@ -139,9 +139,18 @@ class App():
         prefix = 'http+unix://app.sock'
         url = prefix + route
         try:
+            follow_redirects = kwargs.get('allow_redirects', True)
+
+            """
+            We need to prefix redirect urls like '/' or '/login'.
+            Therefore disable redirects and follow them manually.
+            """
             kwargs.setdefault('allow_redirects', False)
             self.response = self.session.request(method=method, url=url,
                 **kwargs)
+
+            if not follow_redirects:
+                return
 
             redirects = 0
             while self.response.is_redirect and redirects < 3:
