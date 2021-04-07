@@ -52,6 +52,26 @@ def register_page():
         ])
 
 
+@check50.check(register_page)
+def register_empty_field():
+    """registration with an empty field fails"""
+    users = [
+        ("", "secret", "secret"),
+        ("check50", "secret", ""),
+        ("check50", "", "")
+    ]
+    with App() as app:
+        for u in users:
+            app.register(*u).status(400)
+
+
+@check50.check(register_page)
+def register_password_mismatch():
+    """registration with password mismatch fails"""
+    with App() as app:
+        app.register("check50", "secret_123!", "secret_999!").status(400)
+
+
 class App():
     def __init__(self):
         self.session = requests_unixsocket.Session()
@@ -120,4 +140,13 @@ class App():
         if missing:
             raise check50.Failure(f'expect to find html elements matching ' +
                     ', '.join(missing))
+        return self
+
+    def register(self, username, password, confirmation):
+        data = {
+            'username': username,
+            'password': password,
+            'confirmation': confirmation,
+        }
+        self.post('/register', data=data)
         return self
