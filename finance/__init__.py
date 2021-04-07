@@ -112,10 +112,10 @@ def login_page():
 
 @check50.check(register)
 def login():
-    """logging in as registered user succceeds"""
+    """login as registered user succceeds"""
     with App() as app:
         app.login(USERNAME, PASSWORD).status(200) \
-           .get("/", allow_redirects=False).status(200)
+            .get("/", allow_redirects=False).status(200)
 
 
 class App():
@@ -155,14 +155,15 @@ class App():
     def _send(self, method, route, **kwargs):
         prefix = 'http+unix://app.sock'
         url = prefix + route
-        try:
-            follow_redirects = kwargs.get('allow_redirects', True)
 
-            """
-            We need to prefix redirect urls like '/' or '/login'.
-            Therefore disable redirects and follow them manually.
-            """
-            kwargs.setdefault('allow_redirects', False)
+        """
+        We need to prefix redirect urls like '/' or '/login'.
+        Therefore disable redirects and follow them manually.
+        """
+        follow_redirects = kwargs.get('allow_redirects', True)
+        kwargs.setdefault('allow_redirects', False)
+
+        try:
             self.response = self.session.request(method=method, url=url,
                 **kwargs)
 
@@ -173,8 +174,12 @@ class App():
             while self.response.is_redirect and redirects < 3:
                 redirects += 1
                 req = self.response.next
-                if req.path_url.startswith('/'):
+
+                if req.url.startswith('/'):
                     req.url = prefix + self.response.next.url
+
+                """Hack: Manually set cookies"""
+                req.prepare_cookies(self.session.cookies)
                 self.response = self.session.send(req)
         except requests.exceptions.ConnectionError:
             raise check50.Failure('Server Connection failed.',
