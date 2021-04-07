@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import os
 import random
+import re
 import requests
 import requests_unixsocket
 import subprocess
@@ -119,6 +120,59 @@ def login():
             .get("/", allow_redirects=False).status(200)
 
 
+@check50.check(login)
+def quote_page():
+    """quote page has all required elements"""
+    with App() as app:
+        app.login(USERNAME, PASSWORD) \
+            .get('/quote').css_select('input[name=symbol]')
+
+
+@check50.check(quote_page)
+def quote_handles_invalid():
+    """quote handles invalid ticker symbol"""
+    with App() as app:
+        app.login(USERNAME, PASSWORD).quote("ZZZ").status(400)
+
+@check50.check(quote_page)
+def quote_handles_blank():
+    """quote handles blank ticker symbol"""
+    with App() as app:
+        app.login(USERNAME, PASSWORD).quote("").status(400)
+
+
+@check50.check(quote_page)
+def quote_handles_valid():
+    """quote handles valid ticker symbol"""
+    quote = quote_lookup('NFX')
+
+    with App() as app:
+        app.login(USERNAME, PASSWORD) \
+           .quote('NFX') \
+           .status(200) \
+           .content(quote['name'], help="Failed to find the quote's name.") \
+           .content(quote['price'], help="Failed to find the quote's price.") \
+           .content(quote['symbol'], help="Failed to find the quote's symbol.")
+
+
+def quote_lookup(symbol):
+    load_dotenv(dotenv_path='.env')
+
+    url = f'https://cloud-sse.iexapis.com/stable/stock/{symbol}/quote'
+    params = {
+        'token': os.getenv('API_KEY'),
+    }
+
+    r = requests.get(url, params=params)
+    data = r.json()
+
+    return {
+        'name':   data['companyName'],
+        'price':  data['latestPrice'],
+        'symbol': data['symbol'],
+    }
+
+
 class App():
     def __init__(self):
         self._session = requests_unixsocket.Session()
@@ -216,8 +270,20 @@ class App():
                 missing.append(s)
 
         if missing:
-            raise check50.Failure(f'expect to find html elements matching ' +
+            raise check50.Failure('expect to find html elements matching ' +
                     ', '.join(missing))
+        return self
+
+    def content(self, regex, help=None):
+        if help is None:
+            help = f'expected to find {regex}'
+
+        text = BeautifulSoup(self._response.content).get_text()
+
+        regxp = re.compile(str(regex))
+        if not regxp.search(text):
+            raise check50.Failure(help)
+
         return self
 
     def register(self, username, password, confirmation):
@@ -235,4 +301,11 @@ class App():
             'password': password,
         }
         self.post('/login', data=data)
+        return self
+
+    def quote(self, symbol):
+        data = {
+            'symbol': symbol,
+        }
+        self.post('/quote', data=data)
         return self
