@@ -107,10 +107,20 @@ class App():
         os.remove('app.sock')
 
     def _send(self, method, route, **kwargs):
-        url = f'http+unix://app.sock{route}'
+        prefix = 'http+unix://app.sock'
+        url = prefix + route
         try:
+            kwargs.setdefault('allow_redirects', False)
             self.response = self.session.request(method=method, url=url,
                 **kwargs)
+
+            redirects = 0
+            while self.response.is_redirect and redirects < 3:
+                redirects += 1
+                req = self.response.next
+                if req.path_url.startswith('/'):
+                    req.url = prefix + self.response.next.url
+                self.response = self.session.send(req)
         except requests.exceptions.ConnectionError:
             raise check50.Failure('Server Connection failed.',
                 help='Maybe the Server did not start')
