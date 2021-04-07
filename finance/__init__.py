@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import os
+import random
 import requests
 import requests_unixsocket
 import subprocess
@@ -70,6 +71,34 @@ def register_password_mismatch():
     """registration with password mismatch fails"""
     with App() as app:
         app.register("check50", "secret_123!", "secret_999!").status(400)
+
+
+"""
+We operate on the student's db. The structure is unkown.
+We cannot drop users. So we have reuse the same user over and over.
+"""
+user = ['check50', 'secret_123!', 'secret_123!']
+@check50.check(register_page)
+def register():
+    """registering user succeeds"""
+    global user
+    new_user = [
+        'check50_' + str(random.randint(100,999)),
+        'check50_123!',
+        'check50_123!',
+    ]
+    with App() as app:
+        app.register(*new_user).status(200)
+        # Register in case the test runs for the first time
+        app.register(*user)
+
+
+@check50.check(register)
+def register_duplicate_username():
+    """registration rejects duplicate username"""
+    global user
+    with App() as app:
+        app.register(*user).status(400)
 
 
 class App():
