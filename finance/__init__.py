@@ -110,6 +110,7 @@ def login_page():
             'input[name=password]',
         ])
 
+
 @check50.check(register)
 def login():
     """login as registered user succceeds"""
@@ -120,11 +121,15 @@ def login():
 
 class App():
     def __init__(self):
-        self.session = requests_unixsocket.Session()
-        self.response = None
+        self._session = requests_unixsocket.Session()
+        self._response = None
+        self._proc = None
 
     def __enter__(self):
-        """We need to close the socket in case of an exception"""
+        """
+        We need to close the socket in case of an exception.
+        Use Context Manager.
+        """
 
         # check50 starts each different checks in different processes.
         # We need to reload the environment variables in each check.
@@ -133,13 +138,13 @@ class App():
         cmd = ['node', 'app.js']
         # Bind the app to a UNIX domain socket to run checks in parallel.
         env = { **os.environ, 'PORT': 'app.sock' }
-        self.proc = subprocess.Popen(cmd, env=env)
+        self._proc = subprocess.Popen(cmd, env=env)
 
         # Wait up to 10 seconds for the server to startup.
         for i in range(0,10):
-            if self.proc.poll():
+            if self._proc.poll():
                 raise check50.Failure(
-                        f'Server crashed with code {self.proc.returncode}')
+                        f'Server crashed with code {self._proc.returncode}')
             if os.path.exists('app.sock'):
                 break
             time.sleep(1)
@@ -148,8 +153,8 @@ class App():
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.proc.terminate()
-        self.proc.wait(timeout=5)
+        self._proc.terminate()
+        self._proc.wait(timeout=5)
         os.remove('app.sock')
 
     def _send(self, method, route, **kwargs):
@@ -164,23 +169,23 @@ class App():
         kwargs.setdefault('allow_redirects', False)
 
         try:
-            self.response = self.session.request(method=method, url=url,
+            self._response = self._session.request(method=method, url=url,
                 **kwargs)
 
             if not follow_redirects:
                 return
 
             redirects = 0
-            while self.response.is_redirect and redirects < 3:
+            while self._response.is_redirect and redirects < 3:
                 redirects += 1
-                req = self.response.next
+                req = self._response.next
 
                 if req.url.startswith('/'):
-                    req.url = prefix + self.response.next.url
+                    req.url = prefix + self._response.next.url
 
                 """Hack: Manually set cookies"""
-                req.prepare_cookies(self.session.cookies)
-                self.response = self.session.send(req)
+                req.prepare_cookies(self._session.cookies)
+                self._response = self._session.send(req)
         except requests.exceptions.ConnectionError:
             raise check50.Failure('Server Connection failed.',
                 help='Maybe the Server did not start')
@@ -194,13 +199,16 @@ class App():
         return self
 
     def status(self, code):
-        if (self.response.status_code != code):
+        if (self._response.status_code != code):
             raise check50.Failure(f'expected status code {code} but got ' +
-                f'{self.response.status_code}')
+                f'{self._response.status_code}')
         return self
 
     def css_select(self, selectors):
-        soup = BeautifulSoup(self.response.content)
+        if not isinstance(selectors, list):
+            selectors = [selectors]
+
+        soup = BeautifulSoup(self._response.content)
 
         missing = []
         for s in selectors:
