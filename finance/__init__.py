@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+from random import randint
 import os
-import random
 import re
 import requests
 import requests_unixsocket
@@ -9,13 +9,6 @@ import subprocess
 import time
 
 import check50
-
-"""
-The user is created in register().
-All tests which need to login have to depend on register().
-"""
-USERNAME = 'check50'
-PASSWORD = 'secret_123!'
 
 
 @check50.check()
@@ -49,6 +42,7 @@ def startup():
     """application starts up"""
     with App() as app:
         app.get('/').status(200)
+
 
 @check50.check(startup)
 def register_page():
@@ -84,22 +78,16 @@ def register_password_mismatch():
 @check50.check(register_page)
 def register():
     """registering user succeeds"""
-    user = [
-        'check50_' + str(random.randint(10000000, 99999999)),
-        'check50_123!',
-        'check50_123!',
-    ]
+
     with App() as app:
-        app.register(*user).status(200)
-        # Register in case the test runs for the first time
-        app.register(USERNAME, PASSWORD, PASSWORD)
+        app.register().status(200)
 
 
 @check50.check(register)
 def register_duplicate_username():
     """registration rejects duplicate username"""
     with App() as app:
-        app.register(USERNAME, PASSWORD, PASSWORD).status(400)
+        app.register().status(400)
 
 
 @check50.check(startup)
@@ -116,29 +104,28 @@ def login_page():
 def login():
     """login as registered user succceeds"""
     with App() as app:
-        app.login(USERNAME, PASSWORD).status(200) \
-            .get("/", allow_redirects=False).status(200)
+        app.login().status(200).get("/", allow_redirects=False).status(200)
 
 
 @check50.check(login)
 def quote_page():
     """quote page has all required elements"""
     with App() as app:
-        app.login(USERNAME, PASSWORD) \
-            .get('/quote').css_select('input[name=symbol]')
+        app.login().get('/quote').css_select('input[name=symbol]')
 
 
 @check50.check(quote_page)
 def quote_handles_invalid():
     """quote handles invalid ticker symbol"""
     with App() as app:
-        app.login(USERNAME, PASSWORD).quote("ZZZ").status(400)
+        app.login().quote("ZZZ").status(400)
+
 
 @check50.check(quote_page)
 def quote_handles_blank():
     """quote handles blank ticker symbol"""
     with App() as app:
-        app.login(USERNAME, PASSWORD).quote("").status(400)
+        app.login().quote("").status(400)
 
 
 @check50.check(quote_page)
@@ -147,12 +134,12 @@ def quote_handles_valid():
     quote = quote_lookup('NFX')
 
     with App() as app:
-        app.login(USERNAME, PASSWORD) \
-           .quote('NFX') \
-           .status(200) \
-           .content(quote['name'], help="Failed to find the quote's name.") \
-           .content(quote['price'], help="Failed to find the quote's price.") \
-           .content(quote['symbol'], help="Failed to find the quote's symbol.")
+        (app.login()
+           .quote('NFX')
+           .status(200)
+           .content(quote['name'], help="Failed to find the quote's name.")
+           .content(quote['price'], help="Failed to find the quote's price.")
+           .content(quote['symbol'], help="Failed to find the quote's symbol."))
 
 
 def quote_lookup(symbol):
@@ -178,6 +165,8 @@ class App():
         self._session = requests_unixsocket.Session()
         self._response = None
         self._proc = None
+        self._username = 'check50_' + str(randint(10000000, 99999999))
+        self._password = 'check50_123!'
 
     def __enter__(self):
         """
@@ -185,9 +174,23 @@ class App():
         Use Context Manager.
         """
 
-        # check50 starts each different checks in different processes.
-        # We need to reload the environment variables in each check.
+        """
+        check50 starts each different checks in different processes.
+        We need to reload the environment variables in each check.
+        """
         load_dotenv(dotenv_path='.env')
+
+        """
+        Generate a new user an save it for later usage.
+
+        At the moment the only way to pass data to later checks
+        is to write to file, depend on the check and read the file.
+        """
+        self._username = os.environ.get('CS50_USERNAME', self._username)
+        self._password = os.environ.get('CS50_PASSWORD', self._password)
+        with open('.env', 'a') as f:
+            f.write(f'CS50_USERNAME={self._username}\n')
+            f.write(f'CS50_PASSWORD={self._password}\n')
 
         cmd = ['node', 'app.js']
         # Bind the app to a UNIX domain socket to run checks in parallel.
@@ -286,21 +289,35 @@ class App():
 
         return self
 
-    def register(self, username, password, confirmation):
+    def register(self, username=None, password=None, confirmation=None):
+        if username is None:
+            username = self._username
+        if password is None:
+            password = self._password
+        if confirmation is None:
+            confirmation = self._password
+
         data = {
             'username': username,
             'password': password,
             'confirmation': confirmation,
         }
         self.post('/register', data=data)
+
         return self
 
-    def login(self, username, password):
+    def login(self, username=None, password=None):
+        if username is None:
+            username = self._username
+        if password is None:
+            password = self._password
+
         data = {
             'username': username,
             'password': password,
         }
         self.post('/login', data=data)
+
         return self
 
     def quote(self, symbol):
