@@ -1,3 +1,4 @@
+from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import os
 import requests
@@ -7,10 +8,12 @@ import time
 
 import check50
 
+
 @check50.check()
 def app_exists():
     """app.js exists"""
     check50.exists("app.js")
+
 
 @check50.check(app_exists)
 def env():
@@ -22,6 +25,7 @@ def env():
     if not os.getenv("API_KEY"):
         raise check50.Failure('The file .env does not specify API_KEY')
 
+
 @check50.check(env)
 def npm_install():
     """install node modules"""
@@ -30,20 +34,32 @@ def npm_install():
     check50.run("npm install").exit(code=0, timeout=20)
     check50.exists("node_modules")
 
+
 @check50.check(npm_install)
-def route():
-    """route / returns 200"""
+def startup():
+    """application starts up"""
     with App() as app:
-        r = app.get('/')
-        if r.status_code != 200:
-            raise check50.Failure(f'Request failed with Code {r.status_code}')
+        app.get('/').status(200)
+
+@check50.check(startup)
+def register_page():
+    """register page has all required elements"""
+    with App() as app:
+        app.get('/register').status(200).css_select([
+            'input[name=username]',
+            'input[name=password]',
+            'input[name=confirmation]',
+        ])
 
 
-class App(object):
+class App():
     def __init__(self):
         self.session = requests_unixsocket.Session()
+        self.response = None
 
     def __enter__(self):
+        """We need to close the socket in case of an exception"""
+
         # check50 starts each different checks in different processes.
         # We need to reload the environment variables in each check.
         load_dotenv(dotenv_path='.env')
@@ -63,14 +79,45 @@ class App(object):
             time.sleep(1)
         else:
             raise check50.Failure('Server not started within 10 seconds')
-
         return self
 
-    def get(self, route):
-        try:
-            return self.session.get(f'http+unix://app.sock{route}')
-        except requests.exceptions.ConnectionError:
-            raise check50.Failure('Server is not running')
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.proc.terminate()
+        self.proc.wait(timeout=5)
+        os.remove('app.sock')
 
-    def __exit__(self, type, value, traceback):
-        self.proc.kill()
+    def _send(self, method, route, **kwargs):
+        url = f'http+unix://app.sock{route}'
+        try:
+            self.response = self.session.request(method=method, url=url,
+                **kwargs)
+        except requests.exceptions.ConnectionError:
+            raise check50.Failure('Server Connection failed.',
+                help='Maybe the Server did not start')
+
+    def get(self, route, **kwargs):
+        self._send('get', route, **kwargs)
+        return self
+
+    def post(self, route, **kwargs):
+        self._send('post', route, **kwargs)
+        return self
+
+    def status(self, code):
+        if (self.response.status_code != code):
+            raise check50.Failure(f'expected status code {code} but got ' +
+                f'{self.response.status_code}')
+        return self
+
+    def css_select(self, selectors):
+        soup = BeautifulSoup(self.response.content)
+
+        missing = []
+        for s in selectors:
+            if not soup.select_one(s):
+                missing.append(s)
+
+        if missing:
+            raise check50.Failure(f'expect to find html elements matching ' +
+                    ', '.join(missing))
+        return self

@@ -7,6 +7,7 @@ check50:
                 - !include ".env"
                 - !exclude "node_modules/"
         dependencies:
+                - beautifulsoup4
                 - python-dotenv
                 - requests
                 - requests_unixsocket
