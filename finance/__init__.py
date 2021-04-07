@@ -84,7 +84,7 @@ def register_password_mismatch():
 def register():
     """registering user succeeds"""
     user = [
-        'check50_' + str(random.randint(100,999)),
+        'check50_' + str(random.randint(10000000, 99999999)),
         'check50_123!',
         'check50_123!',
     ]
