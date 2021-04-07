@@ -9,6 +9,13 @@ import time
 
 import check50
 
+"""
+The user is created in register().
+All tests which need to login have to depend on register().
+"""
+USERNAME = 'check50'
+PASSWORD = 'secret_123!'
+
 
 @check50.check()
 def app_exists():
@@ -73,32 +80,42 @@ def register_password_mismatch():
         app.register("check50", "secret_123!", "secret_999!").status(400)
 
 
-"""
-We operate on the student's db. The structure is unkown.
-We cannot drop users. So we have reuse the same user over and over.
-"""
-user = ['check50', 'secret_123!', 'secret_123!']
 @check50.check(register_page)
 def register():
     """registering user succeeds"""
-    global user
-    new_user = [
+    user = [
         'check50_' + str(random.randint(100,999)),
         'check50_123!',
         'check50_123!',
     ]
     with App() as app:
-        app.register(*new_user).status(200)
+        app.register(*user).status(200)
         # Register in case the test runs for the first time
-        app.register(*user)
+        app.register(USERNAME, PASSWORD, PASSWORD)
 
 
 @check50.check(register)
 def register_duplicate_username():
     """registration rejects duplicate username"""
-    global user
     with App() as app:
-        app.register(*user).status(400)
+        app.register(USERNAME, PASSWORD, PASSWORD).status(400)
+
+
+@check50.check(startup)
+def login_page():
+    """login page has all required elements"""
+    with App() as app:
+        app.get('/login').status(200).css_select([
+            'input[name=username]',
+            'input[name=password]',
+        ])
+
+@check50.check(register)
+def login():
+    """logging in as registered user succceeds"""
+    with App() as app:
+        app.login(USERNAME, PASSWORD).status(200) \
+           .get("/", allow_redirects=False).status(200)
 
 
 class App():
@@ -197,4 +214,12 @@ class App():
             'confirmation': confirmation,
         }
         self.post('/register', data=data)
+        return self
+
+    def login(self, username, password):
+        data = {
+            'username': username,
+            'password': password,
+        }
+        self.post('/login', data=data)
         return self
