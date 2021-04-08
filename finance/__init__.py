@@ -186,6 +186,33 @@ def buy_handles_valid():
                 help="Failed to find the bought quote's count on index page"))
 
 
+@check50.check(buy_handles_valid)
+def sell_page():
+    """sell page has all required elements"""
+    with App() as app:
+        (app.login().get('/sell')
+            .css_select(['input[name=shares]', 'select[name=symbol]']))
+
+
+@check50.check(buy_handles_valid)
+def sell_handles_invalid():
+    """sell handles invalid number of shares"""
+    with App() as app:
+        app.login().sell('NFX', 8).status(400)
+
+
+@check50.check(buy_handles_valid)
+def sell_handles_valid():
+    """sell handles valid sale"""
+    with App() as app:
+        (app.login()
+            .sell('NFX', 2)
+            .get('/')
+            .content('NFX',
+                help="Failed to find the quote's symbol on index page")
+            .content(check50.regex.decimal(2),
+                help="Failed to find the quote's count on index page"))
+
 
 def quote_lookup(symbol):
     load_dotenv(dotenv_path='.env')
@@ -378,4 +405,12 @@ class App():
             'shares': count,
         }
         self.post('/buy', data=data)
+        return self
+
+    def sell(self, symbol, count):
+        data = {
+            'symbol': symbol,
+            'shares': count,
+        }
+        self.post('/sell', data=data)
         return self
