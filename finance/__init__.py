@@ -267,7 +267,7 @@ class App():
         cmd = ['node', 'app.js']
         # Bind the app to a UNIX domain socket to run checks in parallel.
         env = { **os.environ, 'PORT': 'app.sock' }
-        self._proc = subprocess.Popen(cmd, env=env)
+        self._proc = subprocess.Popen(cmd, env=env, stdout=subprocess.DEVNULL)
 
         # Wait up to 10 seconds for the server to startup.
         for i in range(0,10):
