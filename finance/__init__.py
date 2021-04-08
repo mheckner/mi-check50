@@ -142,6 +142,48 @@ def quote_handles_valid():
            .content(quote['symbol'], help="Failed to find the quote's symbol."))
 
 
+@check50.check(login)
+def buy_page():
+    """buy page has all required elements"""
+    with App() as app:
+        (app.login().get('/buy')
+            .css_select(["input[name=shares]", "input[name=symbol]"]))
+
+
+@check50.check(buy_page)
+def buy_handles_invalid_ticker():
+    """buy handles invalid ticker symbol"""
+    with App() as app:
+        app.login().buy("ZZZZ", 2).status(400)
+
+
+@check50.check(buy_page)
+def buy_handles_incorrect_shares():
+    """buy handles fractional, negative, and non-numeric shares"""
+    with App() as app:
+        (app.login()
+            .buy('NFX', -1).status(400)
+            .buy('NFX', 1.5).status(400)
+            .buy('NFX', 'foo').status(400))
+
+@check50.check(buy_page)
+def buy_handles_out_of_balance():
+    """buy handles out of balance situation"""
+    with App() as app:
+        app.login().buy('NFX', 10000).status(400)
+
+
+@check50.check(buy_page)
+def buy_handles_valid():
+    """buy handles valid purchase"""
+    with App() as app:
+        (app.login()
+            .buy("NFX", "4")
+            .status(200))
+            # TODO: check content of index page
+
+
+
 def quote_lookup(symbol):
     load_dotenv(dotenv_path='.env')
 
@@ -325,4 +367,12 @@ class App():
             'symbol': symbol,
         }
         self.post('/quote', data=data)
+        return self
+
+    def buy(self, symbol, count):
+        data = {
+            'symbol': symbol,
+            'shares': count,
+        }
+        self.post('/buy', data=data)
         return self
