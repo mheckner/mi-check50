@@ -178,9 +178,12 @@ def buy_handles_valid():
     """buy handles valid purchase"""
     with App() as app:
         (app.login()
-            .buy("NFX", "4")
-            .status(200))
-            # TODO: check content of index page
+            .buy('NFX', 4).status(200)
+            .get('/')
+            .content('NFX',
+                help="Failed to find the bought quote's symbol on index page")
+            .content(check50.regex.decimal(4),
+                help="Failed to find the bought quote's count on index page"))
 
 
 
@@ -323,7 +326,7 @@ class App():
         if help is None:
             help = f'expected to find {regex}'
 
-        text = BeautifulSoup(self._response.content).get_text()
+        text = BeautifulSoup(self._response.content).get_text(' ')
 
         regxp = re.compile(str(regex))
         if not regxp.search(text):
