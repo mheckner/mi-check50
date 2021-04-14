@@ -5,7 +5,6 @@ check50:
                 - !include "package-lock.json"
                 - !include "*.js"
                 - !include ".env"
-                - !include "public/"
                 - !include "views/"
                 - !exclude "node_modules/"
         dependencies:
@@ -13,6 +12,3 @@ check50:
                 - python-dotenv
                 - requests
                 - requests_unixsocket
-
-submit50:
-        files: *student_files
