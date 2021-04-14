@@ -217,7 +217,7 @@ def sell_handles_valid():
 def quote_lookup(symbol):
     load_dotenv(dotenv_path='.env')
 
-    url = f'https://cloud-sse.iexapis.com/stable/stock/{symbol}/quote'
+    url = f'https://cloud.iexapis.com/stable/stock/{symbol}/quote'
     params = {
         'token': os.getenv('API_KEY'),
     }
