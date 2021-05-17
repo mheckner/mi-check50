@@ -7,6 +7,7 @@ import requests
 import requests_unixsocket
 import subprocess
 import time
+import urllib.parse
 
 import check50
 
@@ -309,8 +310,11 @@ class App():
                 redirects += 1
                 req = self._response.next
 
-                if req.url.startswith('/'):
-                    req.url = prefix + self._response.next.url
+                if not urllib.parse.urlparse(self._response.next.url).netloc:
+                    if req.url.startswith('/'):
+                        req.url = prefix + self._response.next.url
+                    else:
+                        req.url = prefix + '/' + self._response.next.url
 
                 """Hack: Manually set cookies"""
                 req.prepare_cookies(self._session.cookies)
@@ -318,6 +322,9 @@ class App():
         except requests.exceptions.ConnectionError:
             raise check50.Failure('Server Connection failed.',
                 help='Maybe the Server did not start')
+        except requests.exceptions.InvalidSchema:
+            raise check50.Failure('Invalid Url.',
+                help='Maybe some redirects are faulty.')
 
     def get(self, route, **kwargs):
         self._send('get', route, **kwargs)
