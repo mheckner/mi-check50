@@ -307,6 +307,15 @@ class App():
         if os.path.exists('app.sock'):
             os.remove('app.sock')
 
+        # Fail check if there are errors on the console
+        if exception_type is None:
+            err = self._proc.stderr.read()
+            if err:
+                for line in err.splitlines():
+                    check50.log(line)
+                raise check50.Failure('Output on STDERR.',
+                        help='Fix your errors first.')
+
     def _send(self, method, route, **kwargs):
         url = self._prefix + route
 
