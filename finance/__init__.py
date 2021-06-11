@@ -91,7 +91,7 @@ def register_duplicate_username():
         app.register().status(400)
 
 
-@check50.check(startup)
+@check50.check(register)
 def login_page():
     """login page has all required elements"""
     with App() as app:
@@ -101,11 +101,18 @@ def login_page():
         ])
 
 
-@check50.check(register)
+@check50.check(login_page)
+def login_wrong_password():
+    """login with wrong password fails"""
+    with App() as app:
+        app.login(password="wrong_password123").status(400)
+
+
+@check50.check(login_page)
 def login():
     """login as registered user succceeds"""
     with App() as app:
-        app.login().status(200).get("/", allow_redirects=False).status(200)
+        app.login().status(200)
 
 
 @check50.check(login)
@@ -324,15 +331,11 @@ class App():
         We need to prefix redirect urls like '/' or '/login'.
         Therefore disable redirects and follow them manually.
         """
-        follow_redirects = kwargs.get('allow_redirects', True)
         kwargs.setdefault('allow_redirects', False)
 
         try:
             self._response = self._session.request(method=method, url=url,
                 **kwargs)
-
-            if not follow_redirects:
-                return
 
             for _ in range(self._max_redirects):
                 if not self._response.is_redirect:
