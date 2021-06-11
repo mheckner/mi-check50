@@ -283,10 +283,16 @@ class App():
             raise check50.Failure('Server not started within 10 seconds')
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self._proc.terminate()
-        self._proc.wait(timeout=5)
-        os.remove('app.sock')
+    def __exit__(self, exception_type, exception_value, exception_traceback):
+        self._proc.kill()
+
+        """
+        Dependend checks inherit the previous check's filesystem.
+        Remove the server socket, so the new app instance does not throw
+        an address already inuse error.
+        """
+        if os.path.exists('app.sock'):
+            os.remove('app.sock')
 
     def _send(self, method, route, **kwargs):
         url = self._prefix + route
