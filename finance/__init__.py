@@ -270,11 +270,16 @@ class App():
         cmd = ['node', 'app.js']
         # Bind the app to a UNIX domain socket to run checks in parallel.
         env = { **os.environ, 'PORT': 'app.sock' }
-        self._proc = subprocess.Popen(cmd, env=env, stdout=subprocess.DEVNULL)
+        self._proc = subprocess.Popen(cmd,
+                env=env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True)
 
         # Wait up to 10 seconds for the server to startup/create the socket
         for _ in range(0,10):
             if self._proc.poll() is not None:
+                self._print_server_log()
                 raise check50.Failure(
                         f'Server crashed with code {self._proc.returncode}')
             if os.path.exists('app.sock'):
@@ -284,9 +289,16 @@ class App():
             raise check50.Failure('Server not started within 10 seconds')
         return self
 
+    def _print_server_log(self):
+        out = self._proc.stdout.read()
+        for line in out.splitlines():
+            check50.log(line)
+        err = self._proc.stderr.read()
+        for line in err.splitlines():
+            check50.log(line)
+
     def __exit__(self, exception_type, exception_value, exception_traceback):
         self._proc.kill()
-
         """
         Dependend checks inherit the previous check's filesystem.
         Remove the server socket, so the new app instance does not throw
