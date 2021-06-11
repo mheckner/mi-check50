@@ -1,12 +1,11 @@
 check50:
+        # Files available to the checks.
         files: &student_files
-                - !exclude "*"
-                - !include "package.json"
-                - !include "package-lock.json"
-                - !include "*.js"
-                - !include ".env"
-                - !include "views/"
+                - !include "*"
+                - !include ".*" # .env
                 - !exclude "node_modules/"
+
+        # Needed Python Packages
         dependencies:
                 - beautifulsoup4
                 - python-dotenv
