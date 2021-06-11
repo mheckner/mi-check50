@@ -2,8 +2,9 @@ check50:
         # Files available to the checks.
         files: &student_files
                 - !include "*"
-                - !include ".*" # .env
+                - !include ".*"            # .env
                 - !exclude "node_modules/"
+                - !exclude "*.pdf"         # Task Sheet
 
         # Needed Python Packages
         dependencies:
