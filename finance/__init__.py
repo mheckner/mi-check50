@@ -241,6 +241,7 @@ class App():
         self._username = 'check50_' + str(randint(10000000, 99999999))
         self._password = 'check50_123!'
         self._prefix = 'http+unix://app.sock'
+        self._max_redirects = 5
 
     def __enter__(self):
         """
@@ -311,19 +312,15 @@ class App():
             if not follow_redirects:
                 return
 
-            redirects = 0
-            while self._response.is_redirect and redirects < 3:
-                redirects += 1
+            for _ in range(self._max_redirects):
+                if not self._response.is_redirect:
+                    break
+
                 req = self._response.next
-
-                if not urllib.parse.urlparse(self._response.next.url).netloc:
-                    if req.url.startswith('/'):
-                        req.url = self._prefix + self._response.next.url
-                    else:
-                        req.url = self._prefix + '/' + self._response.next.url
-
-                """Hack: Manually set cookies"""
+                req.url = self._prefix_url(self._response.next.url)
+                # Hack: Manually set cookies (for session support)
                 req.prepare_cookies(self._session.cookies)
+
                 self._response = self._session.send(req)
         except requests.exceptions.ConnectionError:
             raise check50.Failure('Server Connection failed.',
@@ -331,6 +328,15 @@ class App():
         except requests.exceptions.InvalidSchema:
             raise check50.Failure('Invalid Url.',
                 help='Maybe some redirects are faulty.')
+
+    def _prefix_url(self, url):
+        if urllib.parse.urlparse(url).netloc:
+            return url
+
+        if url.startswith('/'):
+            return self._prefix + url
+        else:
+            return self._prefix + '/' + url
 
     def get(self, route, **kwargs):
         self._send('get', route, **kwargs)
