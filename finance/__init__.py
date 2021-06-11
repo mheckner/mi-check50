@@ -336,14 +336,14 @@ class App():
 
     def status(self, code):
         if (self._response.status_code != code):
+            method = self._response.request.method;
+            url = self._response.url[len(self._prefix):];
             help = None
             if self._response.status_code == 404:
-                method = self._response.request.method;
-                url = self._response.url[len(self._prefix):];
                 help = f'Does a route for {method} {url} exist?'
 
             raise check50.Failure(f'expected status code {code} but got ' +
-                f'{self._response.status_code}', help=help)
+                f'{self._response.status_code} for {method} {url} ', help=help)
         return self
 
     def css_select(self, selectors):
