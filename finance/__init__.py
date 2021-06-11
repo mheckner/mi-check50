@@ -240,6 +240,7 @@ class App():
         self._proc = None
         self._username = 'check50_' + str(randint(10000000, 99999999))
         self._password = 'check50_123!'
+        self._prefix = 'http+unix://app.sock'
 
     def __enter__(self):
         """
@@ -288,8 +289,7 @@ class App():
         os.remove('app.sock')
 
     def _send(self, method, route, **kwargs):
-        prefix = 'http+unix://app.sock'
-        url = prefix + route
+        url = self._prefix + route
 
         """
         We need to prefix redirect urls like '/' or '/login'.
@@ -312,9 +312,9 @@ class App():
 
                 if not urllib.parse.urlparse(self._response.next.url).netloc:
                     if req.url.startswith('/'):
-                        req.url = prefix + self._response.next.url
+                        req.url = self._prefix + self._response.next.url
                     else:
-                        req.url = prefix + '/' + self._response.next.url
+                        req.url = self._prefix + '/' + self._response.next.url
 
                 """Hack: Manually set cookies"""
                 req.prepare_cookies(self._session.cookies)
@@ -336,8 +336,14 @@ class App():
 
     def status(self, code):
         if (self._response.status_code != code):
+            help = None
+            if self._response.status_code == 404:
+                method = self._response.request.method;
+                url = self._response.url[len(self._prefix):];
+                help = f'Does a route for {method} {url} exist?'
+
             raise check50.Failure(f'expected status code {code} but got ' +
-                f'{self._response.status_code}')
+                f'{self._response.status_code}', help=help)
         return self
 
     def css_select(self, selectors):
