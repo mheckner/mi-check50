@@ -208,6 +208,7 @@ def sell_handles_valid():
     with App() as app:
         (app.login()
             .sell('NFLX', 2)
+            .status(200)
             .get('/')
             .content('NFLX',
                 help="Failed to find the quote's symbol on index page")
