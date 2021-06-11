@@ -271,9 +271,9 @@ class App():
         env = { **os.environ, 'PORT': 'app.sock' }
         self._proc = subprocess.Popen(cmd, env=env, stdout=subprocess.DEVNULL)
 
-        # Wait up to 10 seconds for the server to startup.
-        for i in range(0,10):
-            if self._proc.poll():
+        # Wait up to 10 seconds for the server to startup/create the socket
+        for _ in range(0,10):
+            if self._proc.poll() is not None:
                 raise check50.Failure(
                         f'Server crashed with code {self._proc.returncode}')
             if os.path.exists('app.sock'):
