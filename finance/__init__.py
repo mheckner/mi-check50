@@ -132,11 +132,11 @@ def quote_handles_blank():
 @check50.check(quote_page)
 def quote_handles_valid():
     """quote handles valid ticker symbol"""
-    quote = quote_lookup('NFX')
+    quote = quote_lookup('NFLX')
 
     with App() as app:
         (app.login()
-           .quote('NFX')
+           .quote('NFLX')
            .status(200)
            .content(quote['name'], help="Failed to find the quote's name.")
            .content(quote['price'], help="Failed to find the quote's price.")
@@ -163,15 +163,15 @@ def buy_handles_incorrect_shares():
     """buy handles fractional, negative, and non-numeric shares"""
     with App() as app:
         (app.login()
-            .buy('NFX', -1).status(400)
-            .buy('NFX', 1.5).status(400)
-            .buy('NFX', 'foo').status(400))
+            .buy('NFLX', -1).status(400)
+            .buy('NFLX', 1.5).status(400)
+            .buy('NFLX', 'foo').status(400))
 
 @check50.check(buy_page)
 def buy_handles_out_of_balance():
     """buy handles out of balance situation"""
     with App() as app:
-        app.login().buy('NFX', 10000).status(400)
+        app.login().buy('NFLX', 10000).status(400)
 
 
 @check50.check(buy_page)
@@ -179,9 +179,9 @@ def buy_handles_valid():
     """buy handles valid purchase"""
     with App() as app:
         (app.login()
-            .buy('NFX', 4).status(200)
+            .buy('NFLX', 4).status(200)
             .get('/')
-            .content('NFX',
+            .content('NFLX',
                 help="Failed to find the bought quote's symbol on index page")
             .content(check50.regex.decimal(4),
                 help="Failed to find the bought quote's count on index page"))
@@ -199,7 +199,7 @@ def sell_page():
 def sell_handles_invalid():
     """sell handles invalid number of shares"""
     with App() as app:
-        app.login().sell('NFX', 8).status(400)
+        app.login().sell('NFLX', 8).status(400)
 
 
 @check50.check(buy_handles_valid)
@@ -207,9 +207,9 @@ def sell_handles_valid():
     """sell handles valid sale"""
     with App() as app:
         (app.login()
-            .sell('NFX', 2)
+            .sell('NFLX', 2)
             .get('/')
-            .content('NFX',
+            .content('NFLX',
                 help="Failed to find the quote's symbol on index page")
             .content(check50.regex.decimal(2),
                 help="Failed to find the quote's count on index page"))
