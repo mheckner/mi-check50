@@ -169,13 +169,19 @@ def buy_handles_incorrect_shares():
         (app.login()
             .buy('TSLA', -1).status(400)
             .buy('TSLA', 1.5).status(400)
-            .buy('TSLA', 'foo').status(400))
+            .buy('TSLA', 'foo').status(400)
+            .content('TSLA', negate=True,
+                help='Purchase succeded but it should not'))
 
 @check50.check(buy_page)
 def buy_handles_out_of_balance():
     """buy handles out of balance situation"""
     with express.App() as app:
-        app.login().buy('FB', 10000).status(400)
+        (app.login()
+            .buy('FB', 10000).status(400)
+            .get('/')
+            .content(check50.regex.decimal(10000), negate=True,
+                help='Purchase succeded but it should not'))
 
 
 

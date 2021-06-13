@@ -169,14 +169,15 @@ class App():
                     ', '.join(missing))
         return self
 
-    def content(self, regex, help=None):
+    def content(self, regex, negate=False, help=None):
         if help is None:
             help = f'expected to find {regex}'
 
         text = BeautifulSoup(self._response.content).get_text(' ')
 
         regxp = re.compile(str(regex))
-        if not regxp.search(text):
+        found = regxp.search(text)
+        if (negate and found) or (not negate and not found):
             raise check50.Failure(help)
 
         return self
