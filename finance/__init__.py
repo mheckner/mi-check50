@@ -167,15 +167,16 @@ def buy_handles_incorrect_shares():
     """buy handles fractional, negative, and non-numeric shares"""
     with express.App() as app:
         (app.login()
-            .buy('NFLX', -1).status(400)
-            .buy('NFLX', 1.5).status(400)
-            .buy('NFLX', 'foo').status(400))
+            .buy('TSLA', -1).status(400)
+            .buy('TSLA', 1.5).status(400)
+            .buy('TSLA', 'foo').status(400))
 
 @check50.check(buy_page)
 def buy_handles_out_of_balance():
     """buy handles out of balance situation"""
     with express.App() as app:
-        app.login().buy('NFLX', 10000).status(400)
+        app.login().buy('FB', 10000).status(400)
+
 
 
 @check50.check(buy_page)
