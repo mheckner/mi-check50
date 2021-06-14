@@ -42,6 +42,7 @@ class App():
         self._username = os.environ.get('CS50_USERNAME', self._username)
         self._password = os.environ.get('CS50_PASSWORD', self._password)
         with open('.env', 'a') as f:
+            f.write(f'\n')
             f.write(f'CS50_USERNAME={self._username}\n')
             f.write(f'CS50_PASSWORD={self._password}\n')
 

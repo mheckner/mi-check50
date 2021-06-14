@@ -236,6 +236,12 @@ def quote_lookup(symbol):
     }
 
     r = requests.get(url, params=params)
+
+    if r.status_code != 200:
+        raise check50.Failure('IEX Api did not respond with status code 200.' +
+                f'Status code was {r.status_code}',
+            help='Maybe you provided an invalid API key.')
+
     data = r.json()
 
     return {
