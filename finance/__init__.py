@@ -170,8 +170,8 @@ def buy_handles_incorrect_shares():
             .buy('TSLA', -1).status(400)
             .buy('TSLA', 1.5).status(400)
             .buy('TSLA', 'foo').status(400)
-            .content('TSLA', negate=True,
-                help='Purchase succeded but it should not'))
+            .content('Tesla', negate=True,
+                help='Purchase succeded but it should not.'))
 
 @check50.check(buy_page)
 def buy_handles_out_of_balance():
@@ -180,8 +180,8 @@ def buy_handles_out_of_balance():
         (app.login()
             .buy('FB', 10000).status(400)
             .get('/')
-            .content(check50.regex.decimal(10000), negate=True,
-                help='Purchase succeded but it should not'))
+            .content('Facebook', negate=True,
+                help='Purchase succeded but it should not.'))
 
 
 
@@ -192,6 +192,8 @@ def buy_handles_valid():
         (app.login()
             .buy('NFLX', 4).status(200)
             .get('/')
+            .content('NetFlix',
+                help="Failed to find the bought quote's name on index page")
             .content('NFLX',
                 help="Failed to find the bought quote's symbol on index page")
             .content(check50.regex.decimal(4),
