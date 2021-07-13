@@ -65,6 +65,7 @@ class App():
                 break
             time.sleep(1)
         else:
+            self._proc.kill()
             raise check50.Failure('Server not started within 10 seconds')
         return self
 
