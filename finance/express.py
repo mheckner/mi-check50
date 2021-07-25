@@ -143,11 +143,10 @@ class App():
         self._send('post', route, **kwargs)
         return self
 
-    def status(self, code):
+    def status(self, code, help=None):
         if (self._response.status_code != code):
             method = self._response.request.method;
             url = self._response.url[len(self._prefix):];
-            help = None
             if self._response.status_code == 404:
                 help = f'Does a route for {method} {url} exist?'
 
@@ -155,7 +154,7 @@ class App():
                 f'{self._response.status_code} for {method} {url} ', help=help)
         return self
 
-    def css_select(self, selectors):
+    def css_select(self, selectors, help=None):
         if not isinstance(selectors, list):
             selectors = [selectors]
 
@@ -168,7 +167,7 @@ class App():
 
         if missing:
             raise check50.Failure('expect to find html elements matching ' +
-                    ', '.join(missing))
+                    ', '.join(missing), help=help)
         return self
 
     def content(self, regex, negate=False, help=None):

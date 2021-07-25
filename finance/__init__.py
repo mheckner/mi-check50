@@ -190,13 +190,13 @@ def buy_handles_valid():
     """buy handles valid purchase"""
     with express.App() as app:
         (app.login()
-            .buy('NFLX', 4).status(200)
+            .buy('NFLX', 10).status(200)
             .get('/')
             .content('NetFlix',
                 help="Failed to find the bought quote's name on index page")
             .content('NFLX',
                 help="Failed to find the bought quote's symbol on index page")
-            .content(check50.regex.decimal(4),
+            .content(check50.regex.decimal(10),
                 help="Failed to find the bought quote's count on index page"))
 
 
@@ -212,7 +212,7 @@ def sell_page():
 def sell_handles_invalid():
     """sell handles invalid number of shares"""
     with express.App() as app:
-        app.login().sell('NFLX', 8).status(400)
+        app.login().sell('NFLX', 999).status(400)
 
 
 @check50.check(buy_handles_valid)
@@ -220,12 +220,16 @@ def sell_handles_valid():
     """sell handles valid sale"""
     with express.App() as app:
         (app.login()
+            # A lot students forget to cast the form input to a Number.
+            # String(2) > Number(10)
+            # Take a number which first digit is lager than the first digit
+            # of the users amount of shares.
             .sell('NFLX', 2)
-            .status(200)
+            .status(200, help="Maybe you are comparing Strings with Numbers")
             .get('/')
             .content('NFLX',
                 help="Failed to find the quote's symbol on index page")
-            .content(check50.regex.decimal(2),
+            .content(check50.regex.decimal(10-2),
                 help="Failed to find the quote's count on index page"))
 
 
