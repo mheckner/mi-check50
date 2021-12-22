@@ -105,9 +105,16 @@ class App():
         """
         kwargs.setdefault('allow_redirects', False)
 
+        data = "";
+        if "data" in kwargs:
+            data = str(kwargs["data"])
+        check50.log(("sending {} request to {} with data [{}]").format(method.upper(), route, data))
+
         try:
             self._response = self._session.request(method=method, url=url,
                 **kwargs)
+
+            check50.log(("got response {} for {} request to {}").format(str(self._response.status_code), method.upper(), route, data))
 
             for _ in range(self._max_redirects):
                 if not self._response.is_redirect:
@@ -174,12 +181,29 @@ class App():
         if help is None:
             help = f'expected to find {regex}'
 
+        if negate:
+            check50.log(("checking if \"{}\" is not in page").format(regex))
+        else:
+            check50.log(("checking if \"{}\" is in page").format(regex))
+
         text = BeautifulSoup(self._response.content).get_text(' ')
 
         regxp = re.compile(str(regex))
         found = regxp.search(text)
-        if (negate and found) or (not negate and not found):
+
+        if (negate and found):
+            check50.log(("found \"{}\" in page").format(regex))
             raise check50.Failure(help)
+
+        elif (negate and not found):
+            check50.log(("not found \"{}\" in page").format(regex))
+
+        elif (not negate and not found):
+            check50.log(("not found \"{}\" in page").format(regex))
+            raise check50.Failure(help)
+
+        elif (not negate and found):
+            check50.log(("found \"{}\" in page").format(regex))
 
         return self
 
