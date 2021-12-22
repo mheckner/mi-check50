@@ -195,14 +195,14 @@ class App():
             check50.log(("Found \"{}\" in page").format(regex))
             raise check50.Failure(help)
 
-        else if (negate and not found):
-            check50.log(("Not found \"{}\" in page").format(regex))    
+        elif (negate and not found):
+            check50.log(("Not found \"{}\" in page").format(regex))
 
-        else if (not negate and not found):
+        elif (not negate and not found):
             check50.log(("Not found \"{}\" in page").format(regex))
             raise check50.Failure(help)
 
-        else if (not negate and found):
+        elif (not negate and found):
             check50.log(("Found \"{}\" in page").format(regex))
 
         return self

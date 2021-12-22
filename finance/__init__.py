@@ -170,6 +170,7 @@ def buy_handles_incorrect_shares():
             .buy('TSLA', -1).status(400)
             .buy('TSLA', 1.5).status(400)
             .buy('TSLA', 'foo').status(400)
+            .get('/')
             .content('Tesla', negate=True,
                 help='Purchase succeded but it should not.'))
 
