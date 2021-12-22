@@ -181,14 +181,29 @@ class App():
         if help is None:
             help = f'expected to find {regex}'
 
-        check50.log(("checking that \"{}\" is in page").format(regex))
+        if negate:
+            check50.log(("checking if \"{}\" is not in page").format(regex))
+        else:
+            check50.log(("checking if \"{}\" is in page").format(regex))
 
         text = BeautifulSoup(self._response.content).get_text(' ')
 
         regxp = re.compile(str(regex))
         found = regxp.search(text)
-        if (negate and found) or (not negate and not found):
+
+        if (negate and found):
+            check50.log(("Found \"{}\" in page").format(regex))
             raise check50.Failure(help)
+
+        else if (negate and not found):
+            check50.log(("Not found \"{}\" in page").format(regex))    
+
+        else if (not negate and not found):
+            check50.log(("Not found \"{}\" in page").format(regex))
+            raise check50.Failure(help)
+
+        else if (not negate and found):
+            check50.log(("Found \"{}\" in page").format(regex))
 
         return self
 
