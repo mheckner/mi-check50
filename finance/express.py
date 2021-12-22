@@ -105,9 +105,16 @@ class App():
         """
         kwargs.setdefault('allow_redirects', False)
 
+        data = "";
+        if "data" in kwargs:
+            data = str(kwargs["data"])
+        check50.log(("sending {} request to {} with data [{}]").format(method.upper(), route, data))
+
         try:
             self._response = self._session.request(method=method, url=url,
                 **kwargs)
+
+            check50.log(("got response {} for {} request to {}").format(str(self._response.status_code), method.upper(), route, data))
 
             for _ in range(self._max_redirects):
                 if not self._response.is_redirect:
@@ -173,6 +180,8 @@ class App():
     def content(self, regex, negate=False, help=None):
         if help is None:
             help = f'expected to find {regex}'
+
+        check50.log(("checking that \"{}\" is in page").format(regex))
 
         text = BeautifulSoup(self._response.content).get_text(' ')
 
