@@ -192,18 +192,18 @@ class App():
         found = regxp.search(text)
 
         if (negate and found):
-            check50.log(("Found \"{}\" in page").format(regex))
+            check50.log(("found \"{}\" in page").format(regex))
             raise check50.Failure(help)
 
         elif (negate and not found):
-            check50.log(("Not found \"{}\" in page").format(regex))
+            check50.log(("not found \"{}\" in page").format(regex))
 
         elif (not negate and not found):
-            check50.log(("Not found \"{}\" in page").format(regex))
+            check50.log(("not found \"{}\" in page").format(regex))
             raise check50.Failure(help)
 
         elif (not negate and found):
-            check50.log(("Found \"{}\" in page").format(regex))
+            check50.log(("found \"{}\" in page").format(regex))
 
         return self
 
